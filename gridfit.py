@@ -7,6 +7,25 @@ import scipy.signal as spsig
 import matplotlib.pyplot as plt
 from lmfit import minimize, Parameters, Parameter, report_errors
 
+def read_fits_nparray(name = 'test.fit', number = 0):
+        """ Read .fits file from iStar camera
+        
+        name (str): file name
+        number (int): number of hdulist (usually 0)
+        
+        Returns:
+            _header (pyfits.header.Header): dictionary type something
+            _arr (numpy.ndarray): numpy array
+        
+        """
+        import pyfits
+        _file = name #self. workspace + name
+        _fits = pyfits.open(_file)
+        _header = _fits[number].header
+        _arr = _fits[number].data
+        _arr = _arr[0,:,:] #da nur 2D Array
+        return _arr, _header
+        
 def grid_fit(nparray, params, plotflag = True):
     """ Fit a grid to a 2D data set
     
@@ -57,10 +76,12 @@ def grid_fit(nparray, params, plotflag = True):
         a = params['a'].value
         h = nparray.shape[0]
         w = nparray.shape[1]
+        b = params['b'].value
+        barr = np.ones((h,w))*b
         
         model = grid(h, w, nv, nh, dv, dh, ov, oh, a)
         
-        err = nparray - model
+        err = nparray + model - barr
         err = err.flatten()
         
         return err
@@ -79,9 +100,12 @@ def grid_fit(nparray, params, plotflag = True):
         a = params['a'].value
         h = nparray.shape[0]
         w = nparray.shape[1]
+        b = params['b'].value
+        barr = np.ones((h,w))*b
         
         g = grid(h, w, nv, nh, dv, dh, ov, oh, a)
-        fit = nparray-g
+        sp.misc.imsave('grid.jpg', g)
+        fit = nparray+g-barr
         plt.cla()
         plt.clf()
         plt.imshow(fit)
@@ -92,35 +116,44 @@ def grid_fit(nparray, params, plotflag = True):
         
     return params
     
+
 if __name__ == "__main__":
-    fp = 'C:/Python/SpyDev/gridfit/tar_mitte.jpg'
-    img = spimg.imread(fp, flatten=True)
-    img = spimg.interpolation.rotate(img, 0.9, order = 5, reshape=False)
-    img = img[5:390, 5:320]
-    #img = spimg.filters.median_filter(img, size=(3,3))
-    img = spsig.medfilt2d(img, kernel_size=3)
+    fp = 'D:/Raimund Buero/Python/SpyDev/gridfit/3cm.fits'
+    img, header = read_fits_nparray(name=fp)
+    #img = spimg.imread(fp, flatten=True)
+    img = spimg.interpolation.rotate(img, -0.9, order = 5, reshape=False)
+    img = img[401:714, 364:676]
+    img = spimg.filters.median_filter(img, size=(3,3))
+    sobel_x = [[-1, 0, 1],[-2,0,2],[-1,0,1]]
+    sobel_y = [[-1,-2,-1],[0,0,0],[1,2,1]]
+    #img = spimg.convolve(img, sobel_x)
+    #img = spimg.convolve(img, sobel_y)
+    
+    #img = spsig.medfilt2d(img, kernel_size=3)
     #img = img * (-1)
     
     #show image
     plt.cla()
     plt.clf()
-    plt.imshow(img)
+    plt.imshow(img, origin='lower')
     plt.colorbar()
+    #plt.savefig('original.tif')
     sp.misc.imsave('original.jpg', img)
-    #plt.show()
+    plt.show()
     
     # create a set of Parameters
     params = Parameters()
-    params.add('nv', value=19, vary=True)
-    params.add('nh', value=24, vary=True)
-    params.add('dv', value=15, vary=True, min=5.0, max=25.0)
+    params.add('nv', value=20, vary=False)
+    params.add('nh', value=19, vary=False)
+    params.add('dv', value=16, vary=True, min=5.0, max=25.0)
     #params.add('dh', value=15, vary=True, min=5.0, max=25.0)
     params.add('dh', expr='dv')
-    params.add('ov', value=12, vary=True, min=0., max=50)
-    params.add('oh', value=16, vary=True, min=1., max=50)
-    params.add('a', value=10, vary=True)
+    params.add('ov', value=14, vary=True, min=0., max=50)
+    params.add('oh', value=8, vary=True, min=1., max=50)
+    params.add('a', value=0, vary=True)
+    params.add('b', value=30000, vary=True)
     
     #do fit
-    grid_fit(img, params)
+    #grid_fit(img, params)
     
-    print params['dv'].value, params['a'].value, params['ov'].value, params['oh'].value
+    print params['dv'].value, params['a'].value, params['b'].value, params['ov'].value, params['oh'].value
