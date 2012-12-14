@@ -30,47 +30,55 @@ def grid_fit(nparray, params, plotflag = True):
     """ Fit a grid to a 2D data set
     
     """
-    def grid(h, w, nv, nh, dv, dh, ov, oh, a):
+    def grid(ov, oh, s, h, w, a):
         """ Return a 2d grid
         
         h = height of image
         w = width of image
-        nv = number of vertical lines
-        nh = number of horizontal lines
-        dv = spacing vertical
-        dh = spacing horizontal
-        ov = offset vertical
-        oh = offset horizontal
-        a = amplitude of grid
+        ov = origin vertical
+        oh = origin horizontal
+        s = spacing
+        a = amplitude
         
         """
         g = np.zeros((h,w)) #nparray full of zeros
+        nv = int(w/s +2) #+2 just to make sure
+        nh = int(h/s+2)
         
-        for _h in xrange(h): # for every height
-            for _nv in xrange(nv): #for every vertical line
-                pos = _nv*dv+ov #position jeder verticalen linie
+        #calculate grid origin offset
+        _hp = ov
+        while _hp >= s:
+            _hp = _hp - s
+
+        #print _hp
+        for _nv in xrange(nv): # for every vertical line
+            #calculate horizontal position   
+            _pos = _nv * s + _hp
+            #print _pos
+            for _h in xrange(h): #for every height
                 try:
-                    g[_h, int(pos)] = (pos - int(pos)) *a
-                    g[_h, int(pos+1)] = (int(pos)+1 - pos) *a
+                    g[_h, int(_pos)] = (1-(_pos - int(_pos))) *a
+                    g[_h, int(_pos+1)] = (1-(int(_pos+1)-_pos)) *a
                 except IndexError:
                     pass
-                
-        for _w in xrange(w): #for every width
-            for _nh in xrange(nh): #for every horizontal line
-                pos = _nh*dh+oh
+        
+        _vp = oh
+        while _vp >= s:
+            _vp = _vp -s
+            
+        for _nh in xrange(nh):
+            _pos = _nh * s + _vp
+            for _v in xrange(w):
                 try:
-                    g[int(pos), _w] = (pos - int(pos)) *a
-                    g[int(pos)+1, _w] = (int(pos)+1 - pos)*a
+                    g[int(_pos), _v] = (1-(_pos - int(_pos))) *a
+                    g[int(_pos+1), _v] = (1-(int(_pos+1)-_pos)) *a
                 except IndexError:
                     pass
-                
+           
         return g
     
     def res(params, nparray):
-        nv = int(params['nv'].value)
-        nh = int(params['nh'].value)
-        dv = params['dv'].value
-        dh = params['dh'].value
+        s = params['s'].value
         ov = params['ov'].value
         oh = params['oh'].value
         a = params['a'].value
@@ -79,22 +87,20 @@ def grid_fit(nparray, params, plotflag = True):
         b = params['b'].value
         barr = np.ones((h,w))*b
         
-        model = grid(h, w, nv, nh, dv, dh, ov, oh, a)
+        model = grid(ov, oh, s, h, w, a)
         
-        err = nparray + model - barr
+        err = nparray - (barr-model)
         err = err.flatten()
         
         return err
     
     #do fit
-    minimize(res, params, args=(nparray,)) 
+    minimize(res, params, args=(nparray,))
     #komma ist wichtig, da tupel erwartet!
+    report_errors(params)
     
     if plotflag == True:
-        nv = int(params['nv'].value)
-        nh = int(params['nh'].value)
-        dv = params['dv'].value
-        dh = params['dh'].value
+        s = params['s'].value
         ov = params['ov'].value
         oh = params['oh'].value
         a = params['a'].value
@@ -103,16 +109,20 @@ def grid_fit(nparray, params, plotflag = True):
         b = params['b'].value
         barr = np.ones((h,w))*b
         
-        g = grid(h, w, nv, nh, dv, dh, ov, oh, a)
-        sp.misc.imsave('grid.jpg', g)
-        fit = nparray+g-barr
+        g = grid(ov, oh, s, h, w, a)
+        #sp.misc.imsave('grid.jpg', g)
+        #fit = nparray+g-barr
         plt.cla()
         plt.clf()
-        plt.imshow(fit)
-        plt.colorbar()
+        plt.imshow(img)
+        #plt.hold(True)
+        plt.imshow(g, alpha=0.5)
+        #plt.colorbar()
         #plt.savefig('fit.jpg')
-        sp.misc.imsave('fit.jpg', fit)
+        sp.misc.imsave('grid.jpg', g)
         plt.show()
+        
+        
         
     return params
     
@@ -122,7 +132,8 @@ if __name__ == "__main__":
     img, header = read_fits_nparray(name=fp)
     #img = spimg.imread(fp, flatten=True)
     img = spimg.interpolation.rotate(img, -0.9, order = 5, reshape=False)
-    img = img[401:714, 364:676]
+    #img = img[401:714, 364:676]
+    img = img[380:985, :] #cut interesting image part
     img = spimg.filters.median_filter(img, size=(3,3))
     sobel_x = [[-1, 0, 1],[-2,0,2],[-1,0,1]]
     sobel_y = [[-1,-2,-1],[0,0,0],[1,2,1]]
@@ -139,21 +150,17 @@ if __name__ == "__main__":
     plt.colorbar()
     #plt.savefig('original.tif')
     sp.misc.imsave('original.jpg', img)
-    plt.show()
+    #plt.show()
     
     # create a set of Parameters
-    params = Parameters()
-    params.add('nv', value=20, vary=False)
-    params.add('nh', value=19, vary=False)
-    params.add('dv', value=16, vary=True, min=5.0, max=25.0)
-    #params.add('dh', value=15, vary=True, min=5.0, max=25.0)
-    params.add('dh', expr='dv')
-    params.add('ov', value=14, vary=True, min=0., max=50)
-    params.add('oh', value=8, vary=True, min=1., max=50)
-    params.add('a', value=0, vary=True)
-    params.add('b', value=30000, vary=True)
+    params = Parameters()    
+    params.add('ov', value=520, vary=True)
+    params.add('oh', value=28, vary=True)
+    params.add('s', value=15.7, vary=True, min=10.0, max=20.0)#15.7
+    params.add('a', value=5000, vary=True, min = 0, max=20000)
+    params.add('b', value=30000, vary=True, min=10000)
     
     #do fit
-    #grid_fit(img, params)
+    grid_fit(img, params)
     
-    print params['dv'].value, params['a'].value, params['b'].value, params['ov'].value, params['oh'].value
+    #print params['s'].value, params['a'].value, params['b'].value, params['ov'].value, params['oh'].value
