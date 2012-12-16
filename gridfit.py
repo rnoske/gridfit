@@ -26,7 +26,7 @@ def read_fits_nparray(name = 'test.fit', number = 0):
         _arr = _arr[0,:,:] #da nur 2D Array
         return _arr, _header
         
-def grid_fit(nparray, params, plotflag = True):
+def grid_fit(nparray, params, barr, plotflag = True):
     """ Fit a grid to a 2D data set
     
     """
@@ -84,8 +84,8 @@ def grid_fit(nparray, params, plotflag = True):
         a = params['a'].value
         h = nparray.shape[0]
         w = nparray.shape[1]
-        b = params['b'].value
-        barr = np.ones((h,w))*b
+        #b = params['b'].value
+        #barr = np.ones((h,w))*b
         
         model = grid(ov, oh, s, h, w, a)
         
@@ -106,8 +106,8 @@ def grid_fit(nparray, params, plotflag = True):
         a = params['a'].value
         h = nparray.shape[0]
         w = nparray.shape[1]
-        b = params['b'].value
-        barr = np.ones((h,w))*b
+        #b = params['b'].value
+        #barr = np.ones((h,w))*b
         
         g = grid(ov, oh, s, h, w, a)
         #sp.misc.imsave('grid.jpg', g)
@@ -118,7 +118,7 @@ def grid_fit(nparray, params, plotflag = True):
         #plt.hold(True)
         plt.imshow(g, alpha=0.5)
         #plt.colorbar()
-        #plt.savefig('fit.jpg')
+        plt.savefig('gridfit.jpg')
         sp.misc.imsave('grid.jpg', g)
         plt.show()
         
@@ -128,13 +128,14 @@ def grid_fit(nparray, params, plotflag = True):
     
 
 if __name__ == "__main__":
-    fp = 'D:/Raimund Buero/Python/SpyDev/gridfit/3cm.fits'
+    fp = 'C:/Python/SpyDev/gridfit/3cm.fits'
     img, header = read_fits_nparray(name=fp)
     #img = spimg.imread(fp, flatten=True)
     img = spimg.interpolation.rotate(img, -0.9, order = 5, reshape=False)
     #img = img[401:714, 364:676]
     img = img[380:985, :] #cut interesting image part
     img = spimg.filters.median_filter(img, size=(3,3))
+    barr = spimg.filters.gaussian_filter(img, sigma = 7)
     sobel_x = [[-1, 0, 1],[-2,0,2],[-1,0,1]]
     sobel_y = [[-1,-2,-1],[0,0,0],[1,2,1]]
     #img = spimg.convolve(img, sobel_x)
@@ -152,15 +153,23 @@ if __name__ == "__main__":
     sp.misc.imsave('original.jpg', img)
     #plt.show()
     
+    plt.cla()
+    plt.clf()
+    plt.imshow(barr, origin='lower')
+    plt.colorbar()
+    #plt.savefig('original.tif')
+    sp.misc.imsave('blurred.jpg', img)
+    #plt.show()
+    
     # create a set of Parameters
     params = Parameters()    
     params.add('ov', value=520, vary=True)
     params.add('oh', value=28, vary=True)
     params.add('s', value=15.7, vary=True, min=10.0, max=20.0)#15.7
     params.add('a', value=5000, vary=True, min = 0, max=20000)
-    params.add('b', value=30000, vary=True, min=10000)
+    #params.add('b', value=30000, vary=True, min=10000)
     
     #do fit
-    grid_fit(img, params)
+    grid_fit(img, params, barr)
     
     #print params['s'].value, params['a'].value, params['b'].value, params['ov'].value, params['oh'].value
