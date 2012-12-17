@@ -106,12 +106,19 @@ def calibrate_image():
     
     """
     img geschnitten: img[380:985, :]
-    3cm:
-        ov, oh = (520.3, 13.5)
-        s = 15.65
+    
     0cm:
         ov, oh = (518.5, 6.5)
         s = 16.4
+    1,5cm:
+        ov, oh = (520.5, 9.5)
+        s = 16.0
+    3cm:
+        ov, oh = (520.3, 13.5)
+        s = 15.65
+    4,5cm:
+        ov, oh = (519.5, 16)
+        s = 15.3
     6cm:
         ov, oh = (519.5, 19)
         s = 14.9
@@ -140,7 +147,7 @@ def calibrate_image():
     #plt.hold(True)
     plt.imshow(g, alpha=0.5)
     #plt.colorbar()
-    plt.savefig('fit.jpg')
+    plt.savefig(name + 'fit.jpg')
     #sp.misc.imsave('grid.jpg', g)
     plt.show()
     
@@ -182,31 +189,88 @@ def calc_steigung(dstackarray):
     h, w, z = stack.shape
     #print stack.shape
     m = np.zeros((h,w))
-    x = np.arange(0,z,1)
+    d = np.zeros((h,w))
+    x = np.arange(0, 7.5, 1.5)
+    print x
     from scipy import polyfit
     for _h in xrange(h):
         for _w in xrange(w):
             a, b = polyfit(x, stack[_h,_w,:],1)
             m[_h, _w] = a
-    return m
+    for _h in xrange(h):
+        for _w in xrange(w):
+            d[_h, _w] = m[_h, _w]*6
+    return m, d
         
 
 if __name__ == "__main__":
-    #calibrate_image()
-    h, w = (605, 1024) #size of cutted image
+    calibrate_image()
+    """
+    img geschnitten: img[380:985, :]
     
+    0cm:
+        ov, oh = (518.5, 6.5)
+        s = 16.4
+    1,5cm:
+        ov, oh = (520.5, 9.5)
+        s = 16.0
+    3cm:
+        ov, oh = (520.3, 13.5)
+        s = 15.65
+    4,5cm:
+        ov, oh = (519.5, 16)
+        s = 15.3
+    6cm:
+        ov, oh = (519.5, 19)
+        s = 14.9
+    """
+    """
+    #Calculate gradient1
+    #define new origin
     new_origin = (512-380, 512) #old origin of image ist 512,512
     
+    h,w = (605,1024)
+    
     p_0 = calc_values(16.4, new_origin, h, w)
+    p_15 = calc_values(16.0, new_origin, h, w)
     p_3 = calc_values(15.65, new_origin, h, w)
+    p_45 = calc_values(15.3, new_origin, h, w)
     p_6 = calc_values(14.9, new_origin, h, w)
     
-    stack = np.dstack((p_0, p_3, p_6))
-    m = calc_steigung(stack)
+    stack = np.dstack((p_0, p_15, p_3, p_45, p_6))
+    m, d = calc_steigung(stack) #immer an anzahl von bildern anpassen
     
+    plt.cla()
+    plt.clf()
     plt.imshow(m)
     plt.colorbar()
-    plt.savefig('fsteigung.jpg')
+    plt.savefig('m.jpg')
+    plt.show()
+    
+    plt.cla()
+    plt.clf()
+    plt.imshow(d)
+    plt.colorbar()
+    plt.savefig('d.jpg')
+    plt.show()
+    
+    
+    #geschnitten:
+    cut_m = m[45:345, 400:650]
+    cut_d = d[45:345, 400:650]
+    
+    plt.cla()
+    plt.clf()
+    plt.imshow(cut_m)
+    plt.colorbar()
+    plt.savefig('cut_m.jpg')
+    plt.show()
+    
+    plt.cla()
+    plt.clf()
+    plt.imshow(cut_d)
+    plt.colorbar()
+    plt.savefig('cut_d.jpg')
     plt.show()
     
     from PIL import Image
@@ -215,26 +279,19 @@ if __name__ == "__main__":
     _img = Image.fromarray(np.uint8(m))
     _img.save('v5.bmp')
     
-    
     """
-    g_0, p_0, po_0= grid(518.5, 6.5, 16.4, h, w)
-    g_3, p_3, po_3 = grid(520.3, 13.5, 15.65, h, w)
-    g_6, p_6, po_6 = grid(519.5, 19, 14.9, h, w)
+    """
+    #g_0 = grid(518.5, 6.5, 16.4, h, w)
+    g_15 = grid(518.5, 9.5, 16.0, h, w)
+    #g_3 = grid(520.3, 13.5, 15.65, h, w)
+    #g_6 = grid(519.5, 19, 14.9, h, w)
 
     from PIL import Image, ImageDraw
+    
     rgb = np.dstack((g_0, g_3, g_6))
     _img = Image.fromarray(np.uint8(rgb))
     _img.save('vergleich1.bmp')
-
-    rgb = np.dstack((p_0, p_3, p_6))
-    _img = Image.fromarray(np.uint8(rgb))
-    _img.save('vergleich2.bmp')
-    
-    dist = calc_distance(po_0, po_6)
-    draw = ImageDraw.Draw(_img)
-    for entry in dist:
-        draw.line(entry, fill = 128)
-    _img.save('vergleich4.bmp')
+    S
     """
         
     
