@@ -92,19 +92,37 @@ def calibrate_image():
     """ Calibrate an image with grid function
     
     """
-    fp = 'D:/Raimund Buero/Python/SpyDev/gridfit/3cm.fits'
-    name = '3cm'
+    fp = 'E:/python/gridfit/6cm.fits'
+    name = '6cm'
     img, header = read_fits_nparray(name=fp)
     #img = spimg.imread(fp, flatten=True)
-    img = spimg.interpolation.rotate(img, -0.9, order = 5, reshape=False)
-    img = img[380:985, :] #cut interesting image part
+    img = spimg.interpolation.rotate(img, -90.95, order = 5, reshape=False)
+    
+    img = img[40:626, :] #cut interesting image part
     h, w = img.shape
     img = spimg.filters.median_filter(img, size=(3,3))
-    7
-    ov, oh = (520.3, 13.5) #origin of grid (middle bottom of target)13,5
-    s = 15.65 #spacing in px for grid
+    
+    ov, oh = (486.5, 557) #origin of grid (middle bottom of target)13,5
+    s = 14.75 #spacing in px for grid
     
     """
+    Kalibration 13-01-03 !
+    
+    img rotiert: img = spimg.interpolation.rotate(img, -90.95, order = 5, reshape=False)
+    img geschnitten: img = img[40:626, :]
+    0cm:
+        ov, oh = (484.5, 570.5) 
+        s = 16.25
+    3cm:
+        ov, oh = (482, 563)
+        s = 15.4
+    6cm:
+        ov, oh = (486.5, 557)
+         s = 14.75
+    
+    Kalibration 12-12-04 !
+    
+    img rotiert: img = spimg.interpolation.rotate(img, -0.9, order = 5, reshape=False)
     img geschnitten: img[380:985, :]
     
     0cm:
@@ -190,7 +208,7 @@ def calc_steigung(dstackarray):
     #print stack.shape
     m = np.zeros((h,w))
     d = np.zeros((h,w))
-    x = np.arange(0, 7.5, 1.5)
+    x = np.arange(0, 7, 3)
     print x
     from scipy import polyfit
     for _h in xrange(h):
@@ -204,8 +222,20 @@ def calc_steigung(dstackarray):
         
 
 if __name__ == "__main__":
-    calibrate_image()
+    #calibrate_image()
+    
     """
+    img geschnitten: img = img[40:626, :]
+    0cm:
+        ov, oh = (484.5, 570.5) 
+        s = 16.25
+    3cm:
+        ov, oh = (482, 563)
+        s = 15.4
+    6cm:
+        ov, oh = (486.5, 557)
+         s = 14.75
+         
     img geschnitten: img[380:985, :]
     
     0cm:
@@ -224,20 +254,20 @@ if __name__ == "__main__":
         ov, oh = (519.5, 19)
         s = 14.9
     """
-    """
+    
     #Calculate gradient1
     #define new origin
-    new_origin = (512-380, 512) #old origin of image ist 512,512
+    new_origin = (512-40, 512) #old origin of image is 512,512
     
-    h,w = (605,1024)
+    h,w = (586,1024)
     
-    p_0 = calc_values(16.4, new_origin, h, w)
-    p_15 = calc_values(16.0, new_origin, h, w)
-    p_3 = calc_values(15.65, new_origin, h, w)
-    p_45 = calc_values(15.3, new_origin, h, w)
-    p_6 = calc_values(14.9, new_origin, h, w)
+    p_0 = calc_values(16.25, new_origin, h, w)
+    #p_15 = calc_values(16.0, new_origin, h, w)
+    p_3 = calc_values(15.4, new_origin, h, w)
+    #p_45 = calc_values(15.3, new_origin, h, w)
+    p_6 = calc_values(14.75, new_origin, h, w)
     
-    stack = np.dstack((p_0, p_15, p_3, p_45, p_6))
+    stack = np.dstack((p_0, p_3, p_6))
     m, d = calc_steigung(stack) #immer an anzahl von bildern anpassen
     
     plt.cla()
@@ -279,7 +309,8 @@ if __name__ == "__main__":
     _img = Image.fromarray(np.uint8(m))
     _img.save('v5.bmp')
     
-    """
+    
+    
     """
     #g_0 = grid(518.5, 6.5, 16.4, h, w)
     g_15 = grid(518.5, 9.5, 16.0, h, w)
@@ -291,8 +322,8 @@ if __name__ == "__main__":
     rgb = np.dstack((g_0, g_3, g_6))
     _img = Image.fromarray(np.uint8(rgb))
     _img.save('vergleich1.bmp')
-    S
     """
+    
         
     
     
