@@ -92,18 +92,23 @@ def calibrate_image():
     """ Calibrate an image with grid function
     
     """
-    fp = 'E:/python/gridfit/6cm.fits'
-    name = '6cm'
+    fp = 'D:/Raimund Buero/Python/SpyDev/gridfit/3cm.fits'
+    name = '3cm'
     img, header = read_fits_nparray(name=fp)
     #img = spimg.imread(fp, flatten=True)
-    img = spimg.interpolation.rotate(img, -90.95, order = 5, reshape=False)
     
-    img = img[40:626, :] #cut interesting image part
+    img = spimg.interpolation.rotate(img, -0.95+90 , order = 5, reshape=False)
+    img = img[1024-650:1024-350, 425:675] #für vergleich mit gemachten bildern
+    #img = img[425:675, 350:650] #für vergleich mit gemachten bildern
+    #img = spimg.interpolation.rotate(img, -89.05, order = 5, reshape=False)
+    #img = spimg.interpolation.rotate(img, -90.95, order = 5, reshape=False)
+    
+    img = img[:, :] #cut interesting image part
     h, w = img.shape
     img = spimg.filters.median_filter(img, size=(3,3))
     
-    ov, oh = (486.5, 557) #origin of grid (middle bottom of target)13,5
-    s = 14.75 #spacing in px for grid
+    ov, oh = (482, 563) #origin of grid (middle bottom of target)13,5
+    s = 15.4 #spacing in px for grid
     
     """
     Kalibration 13-01-03 !
@@ -222,7 +227,7 @@ def calc_steigung(dstackarray):
         
 
 if __name__ == "__main__":
-    #calibrate_image()
+    calibrate_image()
     
     """
     img geschnitten: img = img[40:626, :]
@@ -254,7 +259,7 @@ if __name__ == "__main__":
         ov, oh = (519.5, 19)
         s = 14.9
     """
-    
+    """
     #Calculate gradient1
     #define new origin
     new_origin = (512-40, 512) #old origin of image is 512,512
@@ -309,7 +314,7 @@ if __name__ == "__main__":
     _img = Image.fromarray(np.uint8(m))
     _img.save('v5.bmp')
     
-    
+    """
     
     """
     #g_0 = grid(518.5, 6.5, 16.4, h, w)
